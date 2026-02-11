@@ -1,0 +1,114 @@
+:root {
+  --bg: #f4f6fb;
+  --card: #ffffff;
+  --text: #1a2135;
+  --subtext: #5d6885;
+  --primary: #0b7f8b;
+  --primary-hover: #076874;
+  --border: #dbe0ec;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "PingFang SC", sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at top right, #d8eef5, #f6f8fd 40%, #edf1f9);
+}
+
+.container {
+  width: min(1080px, 94vw);
+  margin: 2rem auto;
+}
+
+h1 {
+  margin-bottom: 0.4rem;
+}
+
+.subtitle {
+  margin-top: 0;
+  color: var(--subtext);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 8px 30px rgba(29, 40, 90, 0.06);
+}
+
+#detect-form {
+  display: grid;
+  gap: 0.8rem;
+}
+
+label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.95rem;
+}
+
+input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.95rem;
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 1rem;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--primary-hover);
+}
+
+.status {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+}
+
+#resultGif {
+  width: min(100%, 680px);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0c1220;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  padding: 0.55rem 0.4rem;
+}
+
+th {
+  color: var(--subtext);
+  font-weight: 600;
+}
+
+@media (max-width: 860px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}

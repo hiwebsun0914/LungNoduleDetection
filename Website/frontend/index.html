@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>肺部CT AI早诊</title>
+    <link rel="stylesheet" href="/frontend/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>肺部CT图片 AI 早诊</h1>
+      <p class="subtitle">读取 DICOM 文件夹，调用训练好的模型输出结节框并可视化</p>
+
+      <form id="detect-form" class="card">
+        <label>
+          DICOM 文件夹路径
+          <input id="folderPath" type="text" value="datasets/LIDC-IDRI-1002" required />
+        </label>
+
+        <label>
+          模型 checkpoint 路径
+          <input id="checkpointPath" type="text" value="checkpoint/checkpoint-200000" required />
+        </label>
+
+        <label>
+          置信度阈值
+          <input id="threshold" type="number" min="0" max="1" step="0.05" value="0.5" required />
+        </label>
+
+        <button id="submitBtn" type="submit">开始识别</button>
+      </form>
+
+      <section id="status" class="card status">等待执行</section>
+
+      <section class="card">
+        <h2>识别结果</h2>
+        <img id="resultGif" alt="检测可视化结果" />
+      </section>
+
+      <section class="card">
+        <h2>候选结节列表</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>概率</th>
+              <th>中心体素 (z,y,x)</th>
+              <th>中心坐标 mm (x,y,z)</th>
+              <th>包围框 (z1,y1,x1,z2,y2,x2)</th>
+            </tr>
+          </thead>
+          <tbody id="resultTable"></tbody>
+        </table>
+      </section>
+    </main>
+
+    <script src="/frontend/app.js"></script>
+  </body>
+</html>
