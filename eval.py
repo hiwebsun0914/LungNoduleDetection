@@ -78,7 +78,7 @@ if __name__=="__main__":
     output_path = "results.csv"
     model = VitDet3D.from_pretrained(model_path).eval().to(device)
 
-    dataset = LUNA16_Dataset(data_dir="datasets/luna16").eval()
+    dataset = LUNA16_Dataset(data_dir=r"H:\科研与成长\医创赛_dataset\LUNA16").eval()
 
     with open(output_path,"w+",buffering=1) as wf:
         head = ["seriesuid","coordX","coordY","coordZ","probability"]

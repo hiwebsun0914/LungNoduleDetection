@@ -7,6 +7,8 @@ from torch.utils.data import Dataset
 import glob, os
 from PIL import Image
 
+DEFAULT_DATA_DIR = r"H:\\ScienceAndExplore\\MedicalCreation_dataset\\LUNA16"
+
 def read_image(image_file, meta=False):
     if meta:
         import SimpleITK as sitk
@@ -22,23 +24,45 @@ def read_image(image_file, meta=False):
         return re["img"], re["origin"], re["space"]
 
 def preprocess(datadir):
+    datadir = os.path.abspath(datadir)
+    print(f"[preprocess] data dir: {datadir}")
+    processed = 0
+
     for i in range(10):
-        filenames = glob.glob(f"{datadir}/subset{i}/*mhd")
-        target_dir=f"{datadir}/subset{i}_npy"
+        subset_dir = os.path.join(datadir, f"subset{i}")
+        if not os.path.isdir(subset_dir):
+            print(f"[preprocess] subset{i}: directory not found -> {subset_dir}")
+            continue
+
+        filenames = sorted(glob.glob(os.path.join(subset_dir, "*.mhd")))
+        if len(filenames) == 0:
+            print(f"[preprocess] subset{i}: no .mhd files found")
+            continue
+
+        target_dir = os.path.join(datadir, f"subset{i}_npy")
         os.makedirs(target_dir, exist_ok=True)
+        print(f"[preprocess] subset{i}: {len(filenames)} file(s)")
+
         for fn in filenames:
-            print("processing",fn)
-            img, origin, space = read_image(fn,meta=True)
+            print("processing", fn)
+            img, origin, space = read_image(fn, meta=True)
             bn = os.path.basename(fn)
-            obj = dict(img=img,origin=origin,space=space)
-            np.save(f"{target_dir}/{bn[:-3]}npy",obj)
+            obj = dict(img=img, origin=origin, space=space)
+            np.save(os.path.join(target_dir, f"{bn[:-3]}npy"), obj)
+            processed += 1
+
+    if processed == 0:
+        print("[preprocess] no files were processed.")
+        print("[preprocess] expected files like: LUNA16/subset0/*.mhd")
+    else:
+        print(f"[preprocess] done. processed {processed} file(s).")
 
 def read_csv(fn):
     with open(fn,"r") as f:
         lines = [l.strip().split(",") for l in f.readlines()]
     return lines
   
-def survey_dataset(datadir=".",npy=True):
+def survey_dataset(datadir=DEFAULT_DATA_DIR, npy=True):
     data_split = dict()
     for i in range(10):
         if npy:
@@ -202,7 +226,7 @@ class LUNA16_Dataset(Dataset):
     """
     https://luna16.grand-challenge.org/
     """
-    def __init__(self, split=None, data_dir=".", crop_size=[40,128,128], patch_size=[4,16,16], samples_per_img = 8):
+    def __init__(self, split=None, data_dir=DEFAULT_DATA_DIR, crop_size=[40,128,128], patch_size=[4,16,16], samples_per_img = 8):
         annotations_csv = read_csv(f"{data_dir}/annotations.csv")[1:]
         data_subsets = survey_dataset(data_dir)
         # to filenames
