@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -8,13 +8,13 @@
   </head>
   <body>
     <main class="container">
-      <h1>肺部CT图片 AI 早诊</h1>
-      <p class="subtitle">读取 DICOM 文件夹，调用训练好的模型输出结节框并可视化</p>
+      <h1>肺部CT图像 AI 早诊</h1>
+      <p class="subtitle">读取 DICOM 文件夹，调用训练好的模型输出结节框并可视化。</p>
 
       <form id="detect-form" class="card">
         <label>
           DICOM 文件夹路径
-          <input id="folderPath" type="text" value="datasets/LIDC-IDRI-1002" required />
+          <input id="folderPath" type="text" value="H:\ScienceAndExplore\MedicalCreation_dataset\LIDC\LIDC-IDRI-0001" required />
         </label>
 
         <label>
@@ -34,7 +34,15 @@
 
       <section class="card">
         <h2>识别结果</h2>
-        <img id="resultGif" alt="检测可视化结果" />
+        <div class="viewer">
+          <img id="resultFrame" alt="检测可视化结果" />
+          <div class="viewer-controls">
+            <button id="playBtn" type="button">播放</button>
+            <button id="pauseBtn" type="button">暂停</button>
+            <input id="frameSlider" type="range" min="0" max="0" step="1" value="0" />
+            <span id="frameLabel">Frame 0 / 0</span>
+          </div>
+        </div>
       </section>
 
       <section class="card">
@@ -54,6 +62,6 @@
       </section>
     </main>
 
-    <script src="/frontend/app.js"></script>
+    <script src="/frontend/app.js?v=20260308b"></script>
   </body>
 </html>

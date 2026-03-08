@@ -80,4 +80,4 @@ def train(data_dir, log_dir, model_dir=None, resume=True):
 
 if __name__=="__main__":
     run_name = "412"
-    train(data_dir=r"H:\科研与成长\医创赛_dataset\LUNA16", log_dir=f"logs/{run_name}", model_dir=f"luna-train/{run_name}", resume=False)
+    train(data_dir=r"H:\\ScienceAndExplore\\MedicalCreation_dataset\\LUNA16", log_dir=f"logs/{run_name}", model_dir=f"luna-train/{run_name}", resume=False)

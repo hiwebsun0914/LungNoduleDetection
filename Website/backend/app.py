@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from uuid import uuid4
 
@@ -9,11 +10,13 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
 from inference import (
     ModelRunner,
     detect_nodules,
     load_dicom_series,
-    save_detection_gif,
+    save_detection_frames,
     voxel_center_to_world_xyz,
 )
 
@@ -21,7 +24,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 FRONTEND_DIR = PROJECT_ROOT / "Website" / "frontend"
 RESULTS_DIR = PROJECT_ROOT / "Website" / "backend" / "static" / "results"
 
-DEFAULT_DATASET = "datasets/LIDC-IDRI-1002"
+DEFAULT_DATASET = "H:\\ScienceAndExplore\\MedicalCreation_dataset\\LIDC\\LIDC-IDRI-0001"
 DEFAULT_CHECKPOINT = "checkpoint/checkpoint-200000"
 
 app = FastAPI(title="Lung CT AI Nodule Early Detection")
@@ -43,6 +46,7 @@ class PredictRequest(BaseModel):
 
 
 def resolve_project_path(path_text: str) -> Path:
+    path_text = path_text.strip().strip("\"'")
     path = Path(path_text)
     if not path.is_absolute():
         path = PROJECT_ROOT / path
@@ -77,9 +81,9 @@ def predict(req: PredictRequest) -> dict:
         volume, metadata = load_dicom_series(folder_path)
         detections = detect_nodules(model, volume, probability_threshold=req.probability_threshold)
 
-        gif_name = f"{uuid4().hex}.gif"
-        gif_file = RESULTS_DIR / gif_name
-        save_detection_gif(volume, detections, gif_file)
+        result_id = uuid4().hex
+        frames_dir = RESULTS_DIR / result_id
+        saved_frames = save_detection_frames(volume, detections, frames_dir)
 
         response_detections = []
         for det in detections:
@@ -101,7 +105,13 @@ def predict(req: PredictRequest) -> dict:
             "spacing_xyz": metadata.spacing_xyz.tolist(),
             "origin_xyz": metadata.origin_xyz.tolist(),
             "detections": response_detections,
-            "gif_url": f"/static/results/{gif_name}",
+            "frame_urls": [
+                {
+                    "url": f"/static/results/{result_id}/{frame['file_name']}",
+                    "z_index": frame["z_index"],
+                }
+                for frame in saved_frames
+            ],
         }
     except HTTPException:
         raise

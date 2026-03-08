@@ -1,6 +1,11 @@
 """
 rlsn 2024
 """
+import os
+
+# Allow eval.py to start even if multiple Intel OpenMP runtimes are loaded.
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
 import numpy as np
 import torch
 from model import VitDet3D
@@ -78,7 +83,7 @@ if __name__=="__main__":
     output_path = "results.csv"
     model = VitDet3D.from_pretrained(model_path).eval().to(device)
 
-    dataset = LUNA16_Dataset(data_dir=r"H:\科研与成长\医创赛_dataset\LUNA16").eval()
+    dataset = LUNA16_Dataset(data_dir=r"H:\\ScienceAndExplore\\MedicalCreation_dataset\\LUNA16").eval()
 
     with open(output_path,"w+",buffering=1) as wf:
         head = ["seriesuid","coordX","coordY","coordZ","probability"]

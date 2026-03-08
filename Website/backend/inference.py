@@ -1,8 +1,12 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Any
+
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 import numpy as np
 import pydicom
@@ -73,29 +77,45 @@ def _sort_key(item: tuple[Path, pydicom.Dataset]) -> tuple[Any, ...]:
     return (1, _safe_float(getattr(ds, "InstanceNumber", 0), 0), str(path))
 
 
+def _series_key(ds: pydicom.Dataset, arr: np.ndarray) -> tuple[str, tuple[int, int]]:
+    series_uid = str(getattr(ds, "SeriesInstanceUID", "") or "")
+    return series_uid, (int(arr.shape[0]), int(arr.shape[1]))
+
+
 def load_dicom_series(folder: Path) -> tuple[np.ndarray, VolumeMetadata]:
     files = [p for p in folder.rglob("*") if p.is_file()]
     if not files:
-        raise ValueError(f"未在目录中找到文件: {folder}")
+        raise ValueError(f"鏈湪鐩綍涓壘鍒版枃浠? {folder}")
 
-    dicom_items: list[tuple[Path, pydicom.Dataset]] = []
+    dicom_items: list[tuple[Path, pydicom.Dataset, np.ndarray]] = []
     for file_path in files:
         try:
             ds = pydicom.dcmread(str(file_path), force=True)
-            if hasattr(ds, "PixelData"):
-                dicom_items.append((file_path, ds))
+            if not hasattr(ds, "PixelData"):
+                continue
+
+            arr = ds.pixel_array
+            if arr.ndim != 2:
+                continue
+
+            dicom_items.append((file_path, ds, arr.astype(np.float32)))
         except Exception:
             continue
 
     if not dicom_items:
-        raise ValueError(f"未在目录中找到可读取的 DICOM 影像: {folder}")
+        raise ValueError(f"鏈湪鐩綍涓壘鍒板彲璇诲彇鐨?DICOM 褰卞儚: {folder}")
 
-    dicom_items.sort(key=_sort_key)
+    series_counts = Counter(_series_key(ds, arr) for _, ds, arr in dicom_items)
+    target_key = max(
+        series_counts.items(),
+        key=lambda item: (item[1], bool(item[0][0]), item[0][1][0] * item[0][1][1]),
+    )[0]
+    dicom_items = [item for item in dicom_items if _series_key(item[1], item[2]) == target_key]
+    dicom_items.sort(key=lambda item: _sort_key((item[0], item[1])))
 
     z_positions: list[float] = []
     slices: list[np.ndarray] = []
-    for _, ds in dicom_items:
-        arr = ds.pixel_array.astype(np.float32)
+    for _, ds, arr in dicom_items:
         slope = _safe_float(getattr(ds, "RescaleSlope", 1.0), 1.0)
         intercept = _safe_float(getattr(ds, "RescaleIntercept", 0.0), 0.0)
         arr = arr * slope + intercept
@@ -243,6 +263,42 @@ def _window_to_uint8(slice_img: np.ndarray, wc: float = -600.0, ww: float = 1500
     return out
 
 
+def save_detection_frames(
+    volume: np.ndarray,
+    detections: list[dict[str, Any]],
+    output_dir: Path,
+    max_frames: int = 120,
+) -> list[dict[str, int | str]]:
+    z_slices, height, width = volume.shape
+    step = max(1, int(np.ceil(z_slices / max_frames)))
+
+    saved_frames: list[dict[str, int | str]] = []
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for idx, z in enumerate(range(0, z_slices, step)):
+        base = _window_to_uint8(volume[z])
+        frame = Image.fromarray(base, mode="L").convert("RGB")
+        draw = ImageDraw.Draw(frame)
+
+        for det in detections:
+            z1, y1, x1, z2, y2, x2 = det["bbox_zyx"]
+            if z1 <= z <= z2:
+                draw.rectangle([(x1, y1), (x2, y2)], outline=(255, 30, 30), width=2)
+
+        max_side = 512
+        if max(frame.size) > max_side:
+            scale = max_side / float(max(frame.size))
+            frame = frame.resize((int(frame.width * scale), int(frame.height * scale)), Image.Resampling.BILINEAR)
+
+        file_name = f"frame_{idx:04d}.png"
+        frame.save(str(output_dir / file_name), format="PNG")
+        saved_frames.append({"file_name": file_name, "z_index": int(z)})
+
+    if not saved_frames:
+        raise ValueError("Unable to render preview frames")
+
+    return saved_frames
+
+
 def save_detection_gif(
     volume: np.ndarray,
     detections: list[dict[str, Any]],
@@ -272,7 +328,7 @@ def save_detection_gif(
         frames.append(frame)
 
     if not frames:
-        raise ValueError("无法生成可视化帧")
+        raise ValueError("鏃犳硶鐢熸垚鍙鍖栧抚")
 
     output_file.parent.mkdir(parents=True, exist_ok=True)
     frames[0].save(
@@ -293,3 +349,5 @@ def voxel_center_to_world_xyz(center_zyx: list[float], metadata: VolumeMetadata)
     world_y = origin_y + y * spacing_y
     world_z = origin_z + z * spacing_z
     return [float(world_x), float(world_y), float(world_z)]
+
+
